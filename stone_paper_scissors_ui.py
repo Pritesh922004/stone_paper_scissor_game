@@ -1,157 +1,99 @@
 import random
-import tkinter as tk
-from tkinter import messagebox
+
+import streamlit as st
 
 
-class StonePaperScissorsApp:
-    WIN_RULES = {
-        "Stone": "Scissors",
-        "Paper": "Stone",
-        "Scissors": "Paper",
-    }
+WIN_RULES = {
+    "Stone": "Scissors",
+    "Paper": "Stone",
+    "Scissors": "Paper",
+}
 
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Stone Paper Scissors")
-        self.root.geometry("420x360")
-        self.root.resizable(False, False)
 
-        self.user_score = 0
-        self.computer_score = 0
-        self.round_count = 0
+def initialize_state():
+    if "player_score" not in st.session_state:
+        st.session_state.player_score = 0
+        st.session_state.computer_score = 0
+        st.session_state.round_count = 0
+        st.session_state.last_result = "Choose an option to start playing."
+        st.session_state.last_type = "info"
+        st.session_state.player_choice = None
+        st.session_state.computer_choice = None
 
-        self.title_label = tk.Label(
-            root,
-            text="Stone Paper Scissors",
-            font=("Arial", 20, "bold"),
-            pady=10,
-        )
-        self.title_label.pack()
 
-        self.info_label = tk.Label(
-            root,
-            text="Choose one option to play a round.",
-            font=("Arial", 11),
-        )
-        self.info_label.pack(pady=5)
+def decide_winner(player_choice, computer_choice):
+    if player_choice == computer_choice:
+        return "draw"
+    if WIN_RULES[player_choice] == computer_choice:
+        return "player"
+    return "computer"
 
-        self.score_label = tk.Label(
-            root,
-            text=self.get_score_text(),
-            font=("Arial", 12, "bold"),
-            fg="navy",
-        )
-        self.score_label.pack(pady=8)
 
-        self.button_frame = tk.Frame(root)
-        self.button_frame.pack(pady=12)
+def play_round(player_choice):
+    computer_choice = random.choice(list(WIN_RULES.keys()))
+    winner = decide_winner(player_choice, computer_choice)
 
-        for choice in self.WIN_RULES:
-            button = tk.Button(
-                self.button_frame,
-                text=choice,
-                width=12,
-                font=("Arial", 11),
-                command=lambda selected=choice: self.play_round(selected),
-            )
-            button.pack(side=tk.LEFT, padx=6)
+    st.session_state.round_count += 1
+    st.session_state.player_choice = player_choice
+    st.session_state.computer_choice = computer_choice
 
-        self.result_label = tk.Label(
-            root,
-            text="",
-            font=("Arial", 12),
-            justify="center",
-            pady=10,
-        )
-        self.result_label.pack()
+    if winner == "player":
+        st.session_state.player_score += 1
+        st.session_state.last_result = "You win this round!"
+        st.session_state.last_type = "success"
+    elif winner == "computer":
+        st.session_state.computer_score += 1
+        st.session_state.last_result = "Computer wins this round!"
+        st.session_state.last_type = "error"
+    else:
+        st.session_state.last_result = "This round is a draw!"
+        st.session_state.last_type = "warning"
 
-        self.history_label = tk.Label(
-            root,
-            text="No rounds played yet.",
-            font=("Arial", 10),
-            fg="dim gray",
-            wraplength=360,
-            justify="center",
-        )
-        self.history_label.pack(pady=5)
 
-        self.control_frame = tk.Frame(root)
-        self.control_frame.pack(pady=16)
+def reset_game():
+    st.session_state.player_score = 0
+    st.session_state.computer_score = 0
+    st.session_state.round_count = 0
+    st.session_state.last_result = "Game reset successfully. Start a new round!"
+    st.session_state.last_type = "info"
+    st.session_state.player_choice = None
+    st.session_state.computer_choice = None
 
-        self.reset_button = tk.Button(
-            self.control_frame,
-            text="Reset Score",
-            width=12,
-            command=self.reset_game,
-        )
-        self.reset_button.pack(side=tk.LEFT, padx=6)
 
-        self.exit_button = tk.Button(
-            self.control_frame,
-            text="Exit",
-            width=12,
-            command=root.destroy,
-        )
-        self.exit_button.pack(side=tk.LEFT, padx=6)
-
-    def get_score_text(self):
-        return (
-            f"Player Score: {self.user_score}    "
-            f"Computer Score: {self.computer_score}    "
-            f"Rounds: {self.round_count}"
-        )
-
-    def decide_winner(self, player_choice, computer_choice):
-        if player_choice == computer_choice:
-            return "draw"
-        if self.WIN_RULES[player_choice] == computer_choice:
-            return "player"
-        return "computer"
-
-    def play_round(self, player_choice):
-        computer_choice = random.choice(list(self.WIN_RULES.keys()))
-        winner = self.decide_winner(player_choice, computer_choice)
-        self.round_count += 1
-
-        if winner == "player":
-            self.user_score += 1
-            result_text = "You win this round!"
-            result_color = "green"
-        elif winner == "computer":
-            self.computer_score += 1
-            result_text = "Computer wins this round!"
-            result_color = "red"
-        else:
-            result_text = "This round is a draw!"
-            result_color = "orange"
-
-        self.score_label.config(text=self.get_score_text())
-        self.result_label.config(
-            text=(
-                f"You chose: {player_choice}\n"
-                f"Computer chose: {computer_choice}\n"
-                f"{result_text}"
-            ),
-            fg=result_color,
-        )
-        self.history_label.config(
-            text=f"Round {self.round_count} completed. Click another option to continue playing."
-        )
-
-    def reset_game(self):
-        if messagebox.askyesno("Reset Game", "Do you want to reset the score?"):
-            self.user_score = 0
-            self.computer_score = 0
-            self.round_count = 0
-            self.score_label.config(text=self.get_score_text())
-            self.result_label.config(text="", fg="black")
-            self.history_label.config(text="Game reset successfully. Start a new round!")
+def show_result():
+    getattr(st, st.session_state.last_type)(st.session_state.last_result)
+    if st.session_state.player_choice and st.session_state.computer_choice:
+        st.write(f"You chose: **{st.session_state.player_choice}**")
+        st.write(f"Computer chose: **{st.session_state.computer_choice}**")
 
 
 def main():
-    root = tk.Tk()
-    app = StonePaperScissorsApp(root)
-    root.mainloop()
+    st.set_page_config(page_title="Stone Paper Scissors UI", page_icon="✊")
+    initialize_state()
+
+    st.title("✊ Stone Paper Scissors UI")
+    st.write("Play against the computer and try to get the highest score.")
+
+    score_col1, score_col2, score_col3 = st.columns(3)
+    score_col1.metric("Player Score", st.session_state.player_score)
+    score_col2.metric("Computer Score", st.session_state.computer_score)
+    score_col3.metric("Rounds", st.session_state.round_count)
+
+    button_col1, button_col2, button_col3 = st.columns(3)
+    with button_col1:
+        if st.button("Stone", use_container_width=True):
+            play_round("Stone")
+    with button_col2:
+        if st.button("Paper", use_container_width=True):
+            play_round("Paper")
+    with button_col3:
+        if st.button("Scissors", use_container_width=True):
+            play_round("Scissors")
+
+    if st.button("Reset Score", use_container_width=True):
+        reset_game()
+
+    show_result()
 
 
 if __name__ == "__main__":
